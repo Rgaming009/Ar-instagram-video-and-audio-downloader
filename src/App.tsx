@@ -27,6 +27,7 @@ type VideoQuality = "original" | "1080" | "720" | "480";
 
 const MAX_FILE_SIZE = 150 * 1024 * 1024;
 const MAX_FILE_SIZE_LABEL = "150 MB";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, "") ?? "";
 
 function formatBytes(bytes: number) {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
@@ -140,7 +141,7 @@ function App() {
       const body = new FormData();
       body.append("media", file);
       body.append("quality", quality);
-      const response = await fetch("/api/video", { method: "POST", body });
+      const response = await fetch(`${API_BASE_URL}/api/video`, { method: "POST", body });
       if (!response.ok) throw new Error(await readApiError(response));
       const blob = await response.blob();
       saveBlob(blob, `${file.name.replace(/\.[^.]+$/, "")}-${quality}p.mp4`);
@@ -165,7 +166,7 @@ function App() {
     try {
       const body = new FormData();
       body.append("media", file);
-      const response = await fetch("/api/audio", { method: "POST", body });
+      const response = await fetch(`${API_BASE_URL}/api/audio`, { method: "POST", body });
       if (!response.ok) throw new Error(await readApiError(response));
       const mp3 = await response.blob();
       setAudioBlob(mp3);

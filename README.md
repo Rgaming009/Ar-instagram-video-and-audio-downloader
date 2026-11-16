@@ -54,3 +54,34 @@ only; it does not accept a URL to fetch.
 Only upload files you own or have permission to process. Conversion consumes
 server resources; deploy behind appropriate authentication and rate limiting
 if exposing the API publicly.
+
+## Vercel
+
+The Vercel deployment serves the Vite frontend (`npm run build`, output
+directory `dist`). The Express/FFmpeg API must run separately on a Node.js host
+that supports native binaries, temporary disk space, and long-running requests.
+Do not deploy the media endpoints as Vercel Functions: their 4.5 MB request
+body limit is far below the app's 150 MB upload limit. Vercel Functions also
+have a maximum execution duration, so they are not a suitable replacement for
+this conversion server.
+
+In Vercel, import the repository with the project root set to `./` and use:
+
+- Framework preset: **Vite**
+- Build command: `npm run build`
+- Output directory: `dist`
+- Install command: `npm install`
+
+Set `VITE_API_BASE_URL` in the Vercel project's environment variables to the
+public origin of the separately hosted API (for example,
+`https://api.example.com`, with no trailing slash or `/api`). Set it for each
+deployment environment and redeploy after changing it. This value is included
+in the frontend bundle, so it must not contain secrets. No API keys are
+required by this project.
+
+On the API host, set `CORS_ORIGINS` to a comma-separated list of the exact
+frontend origins allowed to call the API (for example,
+`https://your-project.vercel.app,https://www.example.com`). Set `PORT` only if
+the host does not provide it automatically. The API host must allow requests
+up to 150 MB and provide enough execution time, memory, and temporary storage
+for FFmpeg. The server also enforces a three-minute conversion timeout.

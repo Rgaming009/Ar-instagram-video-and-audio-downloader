@@ -13,6 +13,9 @@ const port = Number(process.env.PORT) || 3001;
 const uploadDirectory = path.join(os.tmpdir(), "instadown-pro");
 const maxFileSize = 150 * 1024 * 1024;
 const allowedQualities = new Set(["1080", "720", "480"]);
+const allowedOrigins = new Set(
+  (process.env.CORS_ORIGINS ?? "").split(",").map((origin) => origin.trim()).filter(Boolean),
+);
 
 await mkdir(uploadDirectory, { recursive: true });
 
@@ -30,6 +33,28 @@ const upload = multer({
 
 app.disable("x-powered-by");
 app.use(express.json({ limit: "10kb" }));
+app.use((req, res, next) => {
+  const origin = req.get("origin");
+  if (origin && allowedOrigins.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.vary("Origin");
+  }
+  if (req.method === "OPTIONS") {
+    if (origin && allowedOrigins.size > 0 && !allowedOrigins.has(origin)) {
+      res.status(403).json({ error: "Origin is not allowed." });
+      return;
+    }
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.sendStatus(204);
+    return;
+  }
+  if (origin && allowedOrigins.size > 0 && !allowedOrigins.has(origin)) {
+    res.status(403).json({ error: "Origin is not allowed." });
+    return;
+  }
+  next();
+});
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
